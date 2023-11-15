@@ -1,36 +1,38 @@
-﻿using System.IO;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 
 String archivoGrande = "2151220-passwords.txt";
 String archivoPequeño = "prueba-passwords.txt";
-String ruta = "..\\..\\..\\"+archivoPequeño;
+String ruta = "..\\..\\..\\" + archivoGrande;
+
 
 
 
 try
 {
-    int cont_line = 0;
+    //Leer todo el archivo
     Encoding codificacion = Encoding.UTF8;
     string[] lines = File.ReadAllLines(ruta, codificacion);
-    cont_line = lines.Length;
+    Console.WriteLine("El archivo tiene: {0} líneas", lines.Length);
+    //escoger linea aleatoria para la contraseña a encontrar
     Random lineaElegida = new Random();
-    int numLinea = lineaElegida.Next(cont_line);
-    byte[] encrypt;
-    String decrypt;
-    using (Aes aesAlg = Aes.Create())
+    int numLinea = lineaElegida.Next(lines.Length);
+    //encriptar la contraseña aleatoria
+    String encrypt;
+    encrypt = Encrypt(lines[numLinea]);
+    Console.WriteLine("Texto Encriptado: " + encrypt);
+
+
+    for (int i = 0; i < lines.Length; i++)
     {
-        encrypt = EncryptStringToBytes(lines[numLinea], aesAlg.Key, aesAlg.IV);
-        decrypt = DecryptStringFromBytes(encrypt, aesAlg.Key, aesAlg.IV);
+        var lineaEncrypt = Encrypt(lines[i]);
+        if (lineaEncrypt == encrypt)
+        {
+            Console.WriteLine("La contraseña era " + lines[i]);
+            Console.WriteLine("Se encontraba en la linea {0}", i+1);
+            break;
+        }
     }
-        
-
-    Console.WriteLine("El archivo tiene: {0} líneas", cont_line);
-    Console.WriteLine(numLinea);
-    Console.WriteLine("Texto Encriptado: " + codificacion.GetString(encrypt));
-    Console.WriteLine("Texto Desencriptado: " + decrypt);
-    Console.ReadLine();
-
 
 }
 catch (Exception e)
@@ -41,59 +43,17 @@ finally
 {
     Console.WriteLine("Executing finally block.");
 }
-static byte[] EncryptStringToBytes(string plainText, byte[] key, byte[] iv)
+
+static string Encrypt(string contraseña)
 {
-    byte[] encrypted;
+    var resultado = "";
+    var convert = SHA256.Create();
 
-    // Create an Aes object with the specified key and IV.
-    using (Aes aes = Aes.Create())
+    var hashValue = convert.ComputeHash(Encoding.UTF8.GetBytes(contraseña));
+    foreach (byte b in hashValue)
     {
-        aes.Key = key;
-        aes.IV = iv;
-
-        // Create a new MemoryStream object to contain the encrypted bytes.
-        using (MemoryStream memoryStream = new MemoryStream())
-        {
-            // Create a CryptoStream object to perform the encryption.
-            using (CryptoStream cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write))
-            {
-                // Encrypt the plaintext.
-                using (StreamWriter streamWriter = new StreamWriter(cryptoStream))
-                {
-                    streamWriter.Write(plainText);
-                }
-
-                encrypted = memoryStream.ToArray();
-            }
-        }
+        resultado += $"{b:X2}";
     }
 
-    return encrypted;
-}
-static string DecryptStringFromBytes(byte[] cipherText, byte[] key, byte[] iv)
-{
-    string decrypted;
-
-    // Create an Aes object with the specified key and IV.
-    using (Aes aes = Aes.Create())
-    {
-        aes.Key = key;
-        aes.IV = iv;
-
-        // Create a new MemoryStream object to contain the decrypted bytes.
-        using (MemoryStream memoryStream = new MemoryStream(cipherText))
-        {
-            // Create a CryptoStream object to perform the decryption.
-            using (CryptoStream cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Read))
-            {
-                // Decrypt the ciphertext.
-                using (StreamReader streamReader = new StreamReader(cryptoStream))
-                {
-                    decrypted = streamReader.ReadToEnd();
-                }
-            }
-        }
-    }
-
-    return decrypted;
+    return resultado;
 }
